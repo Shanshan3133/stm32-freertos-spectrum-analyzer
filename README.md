@@ -1,6 +1,6 @@
 # FreeRTOS Dual-Channel Real-Time Spectrum Analyzer
 
-[![Host verification](https://github.com/Shanshan3133/rtos-sensor-fusion-node/actions/workflows/ci.yml/badge.svg)](https://github.com/Shanshan3133/rtos-sensor-fusion-node/actions/workflows/ci.yml)
+[![Host verification](https://github.com/Shanshan3133/stm32-freertos-spectrum-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/Shanshan3133/stm32-freertos-spectrum-analyzer/actions/workflows/ci.yml)
 
 Portfolio firmware for the STM32F446RE. The design samples two analog channels
 simultaneously at 100 kS/s per channel, processes 1024-sample blocks, and emits
