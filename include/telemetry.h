@@ -42,6 +42,8 @@ typedef struct {
     uint32_t escape_errors;
     uint32_t resync_events;
     uint32_t sequence_lost;
+    uint32_t sequence_duplicates;
+    uint32_t sequence_out_of_order;
 } telemetry_decoder_stats_t;
 
 typedef struct {

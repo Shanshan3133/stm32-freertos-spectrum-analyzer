@@ -128,6 +128,64 @@ class SpectrumMonitorTests(unittest.TestCase):
         self.assertEqual(len(rows), monitor.PREVIEW_SAMPLES)
         self.assertEqual(rows[1]["time_us"], 80.0)
 
+    def test_17_duplicate_and_out_of_order_do_not_inflate_loss(self):
+        decoder = monitor.FrameDecoder()
+        stream = (monitor.make_test_frame(10) + monitor.make_test_frame(10) +
+                  monitor.make_test_frame(9) + monitor.make_test_frame(12))
+        list(decoder.feed(stream))
+        self.assertEqual(decoder.duplicates, 1)
+        self.assertEqual(decoder.out_of_order, 1)
+        self.assertEqual(decoder.lost, 1)
+
+    def test_18_sequence_wrap_is_contiguous(self):
+        decoder = monitor.FrameDecoder()
+        list(decoder.feed(monitor.make_test_frame(65535) +
+                          monitor.make_test_frame(0)))
+        self.assertEqual(decoder.lost, 0)
+        self.assertEqual(decoder.out_of_order, 0)
+
+    def test_19_incomplete_spectra_are_bounded(self):
+        assembler = monitor.SpectrumAssembler()
+        decoder = monitor.FrameDecoder()
+        for timestamp in range(monitor.MAX_PENDING_SPECTRA + 3):
+            chunk = list(decoder.feed(
+                monitor.make_test_frame(timestamp, 0, 0, timestamp)))[0]
+            self.assertIsNone(assembler.push(chunk))
+        self.assertEqual(len(assembler.pending), monitor.MAX_PENDING_SPECTRA)
+        self.assertEqual(assembler.incomplete_evictions, 3)
+
+    def test_20_inconsistent_chunks_rejected(self):
+        assembler = monitor.SpectrumAssembler()
+        decoder = monitor.FrameDecoder()
+        first = list(decoder.feed(
+            monitor.make_test_frame(1, 0, 0, 100)))[0]
+        second_frame = bytearray(monitor.make_test_frame(2, 0, 1, 100))
+        raw = bytearray()
+        escaped = False
+        for byte in second_frame[1:-1]:
+            if escaped:
+                raw.append(byte ^ 0x20)
+                escaped = False
+            elif byte == monitor.ESC:
+                escaped = True
+            else:
+                raw.append(byte)
+        struct.pack_into("<I", raw, 18, 96000)
+        struct.pack_into("<H", raw, 234, monitor.crc16(raw[:-2]))
+        second = monitor.decode_raw(bytes(raw))
+        self.assertIsNone(assembler.push(first))
+        self.assertIsNone(assembler.push(second))
+        self.assertEqual(assembler.inconsistent_chunks, 1)
+        self.assertEqual(len(assembler.pending), 0)
+
+    def test_21_duplicate_chunk_is_counted(self):
+        assembler = monitor.SpectrumAssembler()
+        chunk = list(monitor.FrameDecoder().feed(
+            monitor.make_test_frame(1, 0, 0, 100)))[0]
+        assembler.push(chunk)
+        assembler.push(chunk)
+        self.assertEqual(assembler.duplicate_chunks, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

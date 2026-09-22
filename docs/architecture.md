@@ -49,7 +49,9 @@ spacing. TIM5 supplies a 1 MHz 32-bit timebase. The DSP validates the DMA
 generation before and after copying samples, then checks deadline, minimum RMS,
 clipping, frozen input, and Nyquist plausibility. USART DMA timeouts set
 backpressure status. The independent watchdog is refreshed only when
-acquisition, DSP, and telemetry have each progressed.
+acquisition, DSP, and telemetry have each processed real pipeline data. A DMA
+wait or queue receive timeout does not cast a health vote, so an upstream stall
+cannot be hidden by tasks merely waking on timeout.
 
 `WFI` is used during idle time. STOP mode is not claimed because continuous
 100 kS/s conversion is incompatible with stopping the clock tree.

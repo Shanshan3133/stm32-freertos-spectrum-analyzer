@@ -58,5 +58,9 @@ compressed for transport instead of sending 16-bit bins.
 | 14 | dedicated fault-injection build activated a fault |
 
 The firmware and Python decoders bound input length and separately count CRC,
-format, overflow, escape, resynchronization, and sequence-loss errors. A bad
-frame cannot contaminate the next delimiter-bounded frame.
+format, overflow, escape, resynchronization, true sequence loss, duplicates,
+and out-of-order packets. Modular sequence comparison handles the `65535 -> 0`
+wrap without reporting a false loss. A bad frame cannot contaminate the next
+delimiter-bounded frame. The host also caps incomplete spectrum assemblies at
+16, preventing unbounded memory growth during sustained packet loss, and
+rejects chunks whose per-result metadata disagree.

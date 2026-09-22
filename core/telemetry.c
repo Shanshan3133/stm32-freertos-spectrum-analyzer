@@ -179,12 +179,20 @@ telemetry_decode_result_t telemetry_decoder_feed(
             return TELEMETRY_DECODE_ERROR;
         }
         if (decoder->have_sequence) {
-            const uint16_t expected = (uint16_t)(decoder->last_sequence + 1u);
-            decoder->stats.sequence_lost +=
-                (uint16_t)(chunk->sequence - expected);
+            const uint16_t delta = (uint16_t)(chunk->sequence -
+                                               decoder->last_sequence);
+            if (delta == 0u) {
+                ++decoder->stats.sequence_duplicates;
+            } else if (delta < 0x8000u) {
+                decoder->stats.sequence_lost += (uint16_t)(delta - 1u);
+                decoder->last_sequence = chunk->sequence;
+            } else {
+                ++decoder->stats.sequence_out_of_order;
+            }
+        } else {
+            decoder->last_sequence = chunk->sequence;
+            decoder->have_sequence = true;
         }
-        decoder->last_sequence = chunk->sequence;
-        decoder->have_sequence = true;
         ++decoder->stats.frames_ok;
         return TELEMETRY_DECODE_FRAME;
     }

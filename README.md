@@ -1,5 +1,7 @@
 # FreeRTOS Dual-Channel Real-Time Spectrum Analyzer
 
+[![Host verification](https://github.com/Shanshan3133/rtos-sensor-fusion-node/actions/workflows/ci.yml/badge.svg)](https://github.com/Shanshan3133/rtos-sensor-fusion-node/actions/workflows/ci.yml)
+
 Portfolio firmware for the STM32F446RE. The design samples two analog channels
 simultaneously at 100 kS/s per channel, processes 1024-sample blocks, and emits
 RMS, peak, dominant-frequency, waveform-preview, and spectrum data at 20 Hz.
@@ -14,7 +16,7 @@ required. A logic analyzer is useful evidence but is not required to run it.
 
 | Status | Scope |
 |---|---|
-| Host verified | CRC-16, framing, recovery, spectrum reassembly, complete CSV export, bandwidth bound, and 16 Python/fault-injection tests; portable FFT/C tests pass Cortex-M4 strict compile checks but were not executed because this PC has no native C toolchain |
+| Host verified | CRC-16, framing, recovery, bounded spectrum reassembly, complete CSV export, bandwidth bound, and 21 Python/fault-injection tests; portable FFT/C tests pass Cortex-M4 strict compile checks and execute in Linux CI |
 | Implemented; target build pending | FreeRTOS queues/tasks, dual-ADC DMA adapter, CMSIS-DSP Q15 backend, DAC DMA self-test, USART2 TX DMA, task health voting, IWDG policy, and WFI idle |
 | Requires the physical board | CubeMX-generated HAL project integration, flash/run, 100 kS/s timing, CMSIS-DSP WCET, UART endurance, stack high-water marks, watchdog reset, and captured evidence |
 
@@ -38,7 +40,8 @@ binary has already run.
 - TIM5 runs as a 1 MHz 32-bit timebase, avoiding the approximately 23.9-second
   wrap that a raw 180 MHz DWT counter would have caused.
 - The watchdog task feeds IWDG only after acquisition, DSP, and telemetry have
-  all reported progress within the voting window.
+  all reported real data-path progress within the voting window. Queue or DMA
+  timeouts deliberately withhold a vote instead of disguising a stalled pipeline.
 - Idle uses `WFI`; deeper STOP-mode claims are deliberately outside this
   continuous 100 kS/s instrument.
 
@@ -100,9 +103,9 @@ powershell -ExecutionPolicy Bypass -File tools\verify.ps1
 
 The PowerShell script uses the ARM GCC shipped under `C:\ST`, compiles the
 portable C modules and C test source with warnings as errors, and runs the
-Python suite. This is a compile check, not execution of the ARM objects. If a
-native C compiler and CMake are installed, the portable executable can
-additionally be built and run with CTest.
+Python suite. This is a local cross-compile check, not execution of the ARM
+objects. GitHub Actions additionally builds and executes the portable C tests
+with CTest on every push and pull request.
 
 For live serial input, plotting, and the precision report, install the
 host-only packages:
@@ -148,8 +151,10 @@ Use these bullets only after the hardware acceptance sheet passes:
   recovery, and protocol fault handling using DAC loopback, GPIO timing traces,
   and automated Python tests.
 
-Before hardware validation, change “Developed/Validated” to
-“Implemented the software architecture for” and “Host-tested.”
+Before hardware validation, use the accurate application-ready wording in
+[resume and interview notes](docs/resume_and_interview.md). Do not claim a
+measured target sampling rate, WCET, or endurance result until the acceptance
+sheet contains the corresponding evidence.
 
 ## License
 

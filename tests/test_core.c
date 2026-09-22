@@ -143,6 +143,40 @@ static void test_decoder_recovers_after_corruption(void) {
     assert(chunk.sequence == 2u);
 }
 
+static void feed_frame(telemetry_decoder_t *decoder,
+                       const uint8_t *frame, size_t length,
+                       spectrum_chunk_t *chunk) {
+    for (size_t i = 0u; i < length; ++i) {
+        (void)telemetry_decoder_feed(decoder, frame[i], chunk);
+    }
+}
+
+static void test_sequence_classification(void) {
+    spectrum_result_t result;
+    fill_result(&result);
+    telemetry_decoder_t decoder;
+    spectrum_chunk_t chunk;
+    uint8_t frame[TELEMETRY_MAX_FRAME];
+    telemetry_decoder_init(&decoder);
+
+    size_t length = telemetry_encode_spectrum_chunk(
+        10u, &result, 0u, 0u, frame, sizeof(frame));
+    feed_frame(&decoder, frame, length, &chunk);
+    length = telemetry_encode_spectrum_chunk(
+        10u, &result, 0u, 0u, frame, sizeof(frame));
+    feed_frame(&decoder, frame, length, &chunk);
+    length = telemetry_encode_spectrum_chunk(
+        9u, &result, 0u, 0u, frame, sizeof(frame));
+    feed_frame(&decoder, frame, length, &chunk);
+    length = telemetry_encode_spectrum_chunk(
+        12u, &result, 0u, 0u, frame, sizeof(frame));
+    feed_frame(&decoder, frame, length, &chunk);
+
+    assert(decoder.stats.sequence_duplicates == 1u);
+    assert(decoder.stats.sequence_out_of_order == 1u);
+    assert(decoder.stats.sequence_lost == 1u);
+}
+
 static void test_acquisition_health(void) {
     uint32_t samples[ANALYZER_FFT_SIZE] = {0u};
     adc_dma_block_t block = {
@@ -207,6 +241,7 @@ int main(void) {
     test_telemetry_round_trip();
     test_telemetry_magnitude_saturates();
     test_decoder_recovers_after_corruption();
+    test_sequence_classification();
     test_acquisition_health();
     test_spectrum_health();
     test_signal_quality_flags();

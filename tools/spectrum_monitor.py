@@ -23,6 +23,7 @@ BINS_PER_CHUNK = 128
 CHUNKS = BINS // BINS_PER_CHUNK
 PREVIEW_SAMPLES = 128
 PREVIEW_PER_CHUNK = 32
+MAX_PENDING_SPECTRA = 16
 PAYLOAD_LENGTH = 228
 RAW_LENGTH = 236
 HEADER = struct.Struct("<BBHHIIBBBBIHHHHIII")
@@ -157,6 +158,8 @@ class FrameDecoder:
         self.escape_errors = 0
         self.resync_events = 0
         self.lost = 0
+        self.duplicates = 0
+        self.out_of_order = 0
         self.last_sequence: int | None = None
 
     def feed(self, data: bytes) -> Iterator[SpectrumChunk]:
@@ -187,9 +190,16 @@ class FrameDecoder:
                         self.resync_events += 1
                     else:
                         if self.last_sequence is not None:
-                            expected = (self.last_sequence + 1) & 0xFFFF
-                            self.lost += (chunk.sequence - expected) & 0xFFFF
-                        self.last_sequence = chunk.sequence
+                            delta = (chunk.sequence - self.last_sequence) & 0xFFFF
+                            if delta == 0:
+                                self.duplicates += 1
+                            elif delta < 0x8000:
+                                self.lost += delta - 1
+                                self.last_sequence = chunk.sequence
+                            else:
+                                self.out_of_order += 1
+                        else:
+                            self.last_sequence = chunk.sequence
                         self.frames += 1
                         yield chunk
                 self.buffer.clear()
@@ -220,10 +230,34 @@ class FrameDecoder:
 class SpectrumAssembler:
     def __init__(self) -> None:
         self.pending: dict[tuple[int, int], dict[int, SpectrumChunk]] = {}
+        self.incomplete_evictions = 0
+        self.duplicate_chunks = 0
+        self.inconsistent_chunks = 0
 
     def push(self, chunk: SpectrumChunk) -> SpectrumFrame | None:
         key = (chunk.timestamp_us, chunk.channel)
+        if key not in self.pending and len(self.pending) >= MAX_PENDING_SPECTRA:
+            oldest = next(iter(self.pending))
+            del self.pending[oldest]
+            self.incomplete_evictions += 1
         parts = self.pending.setdefault(key, {})
+        if parts:
+            reference = next(iter(parts.values()))
+            invariant = (
+                chunk.status, chunk.sample_rate_hz, chunk.rms, chunk.peak,
+                chunk.dominant_hz, chunk.processing_us, chunk.dropped_blocks,
+            )
+            reference_invariant = (
+                reference.status, reference.sample_rate_hz, reference.rms,
+                reference.peak, reference.dominant_hz,
+                reference.processing_us, reference.dropped_blocks,
+            )
+            if invariant != reference_invariant:
+                del self.pending[key]
+                self.inconsistent_chunks += 1
+                return None
+        if chunk.chunk_index in parts:
+            self.duplicate_chunks += 1
         parts[chunk.chunk_index] = chunk
         if len(parts) != CHUNKS:
             return None
@@ -406,7 +440,13 @@ def main(argv: list[str] | None = None) -> int:
     print(f"frames={decoder.frames} errors={decoder.errors} "
           f"crc={decoder.crc_errors} format={decoder.format_errors} "
           f"overflow={decoder.overflow_errors} escape={decoder.escape_errors} "
-          f"resync={decoder.resync_events} lost={decoder.lost}", file=sys.stderr)
+          f"resync={decoder.resync_events} lost={decoder.lost} "
+          f"duplicates={decoder.duplicates} "
+          f"out_of_order={decoder.out_of_order} "
+          f"incomplete_evictions={assembler.incomplete_evictions} "
+          f"duplicate_chunks={assembler.duplicate_chunks} "
+          f"inconsistent_chunks={assembler.inconsistent_chunks}",
+          file=sys.stderr)
     return 0
 
 

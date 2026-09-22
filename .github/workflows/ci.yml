@@ -1,0 +1,30 @@
+name: host-verification
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python protocol and fault-injection tests
+        run: python -m unittest discover -s tests -v
+      - name: Spectrum monitor self-test
+        run: python tools/spectrum_monitor.py --self-test
+      - name: Q15 precision regression
+        run: python tools/fft_precision_report.py --check
+      - name: Configure portable C tests
+        # The C tests use assert(), so keep assertions enabled.
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+      - name: Build portable C tests
+        run: cmake --build build --config Debug --parallel
+      - name: Execute portable C tests
+        run: ctest --test-dir build -C Debug --output-on-failure

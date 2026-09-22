@@ -65,7 +65,8 @@ static void acquisition_task(void *argument) {
         adc_dma_block_t block;
         if (!platform_adc_wait_block(&block, ADC_BLOCK_TIMEOUT_MS)) {
             status_set(STATUS_ADC_OVERRUN);
-            app_health_kick(HEALTH_ACQUISITION);
+            /* A timeout is not progress. Withhold the watchdog vote so a
+             * stalled ADC/DMA path is recovered by IWDG. */
             continue;
         }
         status_set(acquisition_health_check(&monitor, &block,
@@ -132,7 +133,7 @@ static void dsp_task(void *argument) {
         adc_dma_block_t block;
         if (xQueueReceive(block_queue, &block,
                           pdMS_TO_TICKS(ADC_BLOCK_TIMEOUT_MS)) != pdPASS) {
-            app_health_kick(HEALTH_DSP);
+            /* Do not hide an upstream acquisition stall from the watchdog. */
             continue;
         }
         memset(&dsp_result, 0, sizeof(dsp_result));
@@ -196,7 +197,7 @@ static void telemetry_task(void *argument) {
     for (;;) {
         if (xQueueReceive(result_queue, &telemetry_result,
                           pdMS_TO_TICKS(100u)) != pdPASS) {
-            app_health_kick(HEALTH_TELEMETRY);
+            /* A missing result means the pipeline has not progressed. */
             continue;
         }
         const TickType_t now = xTaskGetTickCount();
