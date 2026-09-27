@@ -1,6 +1,16 @@
 # Hardware acceptance checklist
 
-All numbers below are acceptance targets until a dated capture is committed.
+Acceptance targets remain pending unless a result is explicitly marked as
+observed. On 2026-09-27 the NUCLEO-F446RE was flashed and run without DAC-to-ADC
+jumpers. A 60 s VCP smoke run yielded 1194 complete channel-0 and 1193 complete
+channel-1 spectra, zero CRC/format/sequence errors, zero reported dropped
+blocks, and a maximum reported `processing_us` of 1,812. Both ADC inputs were
+floating, so this run establishes boot, task progress, UART framing, and basic
+DMA-path liveness—not tone accuracy, analog validity, independent 100 kS/s
+timing, or worst-case execution time. A separate injected DSP stall produced
+IWDG resets and the reset-cause status bit; normal firmware was restored and
+smoke-tested again. The test commands/results are in
+[`evidence/run-20260927/metadata.md`](../evidence/run-20260927/metadata.md).
 
 ## First-board priority
 
@@ -27,7 +37,7 @@ All numbers below are acceptance targets until a dated capture is committed.
 | Signal quality | disconnect, ground, then overdrive within safe limits | weak/frozen/clipping flags; valid bit cleared |
 | UART saturation | worst-case escaped test data | no transmit timeout or flagged drop |
 | Stack margin | `uxTaskGetStackHighWaterMark()` after stress | at least 25% free per task |
-| Watchdog | compile-time DSP-stall injection | IWDG reset occurs; reset cause reported |
+| Watchdog | compile-time DSP-stall injection | observed 2026-09-27: IWDG reset and reset-cause bit; measure recovery latency separately |
 | Idle behavior | timing trace around `WFI` or debugger counter | CPU enters sleep between runnable work |
 
 Record board revision, firmware commit, compiler version/options, clock

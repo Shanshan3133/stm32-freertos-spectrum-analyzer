@@ -23,7 +23,9 @@
 
 /* Set one option nonzero only in a dedicated validation build. */
 #define FAULT_INJECT_DROP_EVERY_N_BLOCKS     0u
+#ifndef FAULT_INJECT_DSP_STALL_AFTER_BLOCKS
 #define FAULT_INJECT_DSP_STALL_AFTER_BLOCKS  0u
+#endif
 #define FAULT_INJECT_UART_FAIL_EVERY_N_FRAMES 0u
 #define FAULT_INJECT_FREEZE_ADC              0u
 

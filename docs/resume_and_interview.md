@@ -3,13 +3,13 @@
 This document separates claims that are defensible now from claims that require
 physical target evidence. Keep that distinction in applications and interviews.
 
-## Current resume version: host-verified, target pending
+## Current resume version: flashed and smoke-tested; loopback pending
 
 **FreeRTOS Dual-Channel Real-Time Spectrum Analyzer | C, Python, STM32F446**
 
-- Implemented the firmware architecture for a 100 kS/s-per-channel analyzer
-  using timer-triggered dual ADC, DMA ping-pong buffering, and a
-  priority-scheduled FreeRTOS acquisition/DSP/telemetry pipeline.
+- Built and flashed a dual-channel STM32F446 spectrum-analyzer firmware using
+  timer-triggered dual ADC, DMA ping-pong buffering, and a priority-scheduled
+  FreeRTOS acquisition/DSP/telemetry pipeline.
 - Developed a 1024-point Q15 FFT pipeline with DC removal, Hann windowing, RMS,
   peak and interpolated-frequency estimation; quantified fixed-point error
   against a floating-point reference across 12 signal cases.
@@ -19,34 +19,35 @@ physical target evidence. Keep that distinction in applications and interviews.
 - Added progress-based watchdog voting, DMA ownership checks, sticky fault
   diagnostics, UART bandwidth analysis, and CI that builds and executes the
   portable C test suite.
+- Smoke-tested the board over its ST-LINK virtual COM port: 2,387 complete
+  spectra in 60 s, zero CRC/format/sequence errors or reported dropped blocks;
+  confirmed watchdog reset reporting with an injected DSP stall.
 
-Do not use `measured`, `achieved`, `validated on STM32`, or `ran at 100 kS/s`
-yet. The 100 kS/s rate and 9 ms deadline are design targets until hardware
-acceptance is complete.
+Do not claim verified 100 kS/s analog sampling accuracy, 976.5625 Hz detection,
+worst-case deadline, or watchdog recovery latency yet. The 100 kS/s trigger rate and
+9 ms deadline are configured targets until independent loopback/timing
+acceptance is complete. The smoke test used floating ADC inputs.
 
 ## Short project description for an application form
 
-Designed and host-validated the software architecture of a dual-channel
-FreeRTOS spectrum analyzer for STM32F446. The project combines timer-triggered
-ADC/DMA buffering, a CMSIS-DSP Q15 FFT backend, watchdog-supervised tasks, a
-CRC-protected telemetry protocol, Python visualization, fault injection, and
-automated CI. Target-board timing and endurance measurements are explicitly
-tracked as pending because the development board was unavailable before the
-application deadline.
+Built and flashed a dual-channel FreeRTOS spectrum-analyzer firmware for
+STM32F446, combining timer-triggered ADC/DMA buffering, a CMSIS-DSP Q15 FFT,
+watchdog-supervised tasks, CRC-protected telemetry, Python visualization, fault
+injection, and CI. Initial on-board serial smoke and injected watchdog reset
+tests passed; DAC-to-ADC
+loopback accuracy and long-run timing/endurance measurements remain pending.
 
-## Interview answer: why target evidence is pending
+## Interview answer: what target evidence exists
 
-> I completed the firmware architecture, portable DSP reference, protocol,
-> receiver, fault injection, and automated host verification. The target board
-> became unavailable before my application deadline, so I did not present the
-> 100 kS/s rate or WCET budget as measured results. I documented an acceptance
-> plan using DAC-to-ADC loopback, DWT cycle timing, stack high-water marks, and
-> watchdog reset injection, which I can execute without changing the system
-> architecture when the board is available.
+> I built and flashed the target firmware on NUCLEO-F446RE. With no external
+> jumpers, I observed correctly framed dual-channel telemetry over the ST-LINK
+> serial bridge with no reported drops in a 10-second smoke run. That proves
+> boot and basic data-path progress, but the ADC pins were floating. I have not
+> yet claimed measured sampling accuracy, tone detection, true WCET, or
+> watchdog recovery; those require the documented loopback and fault tests.
 
 ## Upgrade after hardware acceptance
 
-Only after every relevant row in `validation.md` has dated evidence, replace
-the first bullet's `Implemented the firmware architecture for` with `Built`,
-and replace `Host-tested` with the actual measured frequency error, maximum or
-p99.9 DSP time, endurance duration, dropped-block count, and stack margin.
+Only after each relevant row in `validation.md` has dated evidence, add the
+actual measured frequency error, maximum or p99.9 DSP time, endurance
+duration, dropped-block count, and stack margin to the resume.

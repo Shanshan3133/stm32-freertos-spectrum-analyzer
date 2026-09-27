@@ -1,4 +1,14 @@
-# STM32CubeIDE integration for NUCLEO-F446RE
+# NUCLEO-F446RE target build
+
+The repository now contains a standalone STM32F446RE target under
+`target/stm32f446/`. Run `tools/fetch_sdk.ps1` once to check out pinned official
+STM32CubeF4 sources, then `tools/build_target.ps1` to build an ARM binary with
+the compiler, CMake and Ninja bundled in STM32CubeIDE 2.2. The firmware was
+flashed and produced valid dual-channel telemetry through the ST-LINK VCP
+without loopback wires. The loopback and full hardware acceptance are pending.
+
+The settings below also document equivalent manual CubeMX/IDE configuration;
+they are not required for the standalone build.
 
 Create a new STM32 project for `NUCLEO-F446RE`. Generate HAL and FreeRTOS code,
 then add `app/`, `core/health_monitor.c`, `core/telemetry.c`,
@@ -53,7 +63,9 @@ COM bridge using the same Mini-USB cable.
 
 ## First run
 
-1. Disable IWDG while bringing up clocks and ADC/DMA.
+1. Flash `build/target-stm32f446/spectrum_f446.bin` at `0x08000000` and run
+   `python tools/serial_smoke.py --port COM6 --seconds 10` (adjust port).
 2. Connect PA4/A2 to PA0/A0 and PA1/A1 with power off.
-3. Flash, start the Python monitor at 921600 baud, and confirm 976.5625 Hz.
-4. Re-enable IWDG, run the acceptance checklist, and record evidence.
+3. Power on, start the Python monitor at 921600 baud, and confirm 976.5625 Hz.
+4. Run the remaining acceptance checklist and record evidence. IWDG is enabled
+   in the tested build; its deliberate reset recovery has not yet been tested.

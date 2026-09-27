@@ -17,12 +17,15 @@ required. A logic analyzer is useful evidence but is not required to run it.
 | Status | Scope |
 |---|---|
 | Host verified | CRC-16, framing, recovery, bounded spectrum reassembly, complete CSV export, bandwidth bound, and 21 Python/fault-injection tests; portable FFT/C tests pass Cortex-M4 strict compile checks and execute in Linux CI |
-| Implemented; target build pending | FreeRTOS queues/tasks, dual-ADC DMA adapter, CMSIS-DSP Q15 backend, DAC DMA self-test, USART2 TX DMA, task health voting, IWDG policy, and WFI idle |
-| Requires the physical board | CubeMX-generated HAL project integration, flash/run, 100 kS/s timing, CMSIS-DSP WCET, UART endurance, stack high-water marks, watchdog reset, and captured evidence |
+| Built and flashed on NUCLEO-F446RE | Reproducible ARM-GCC target build with official STM32CubeF4 HAL, FreeRTOS and CMSIS-DSP; dual-ADC/DAC DMA pipeline, USART2 DMA, task health voting, IWDG policy and WFI idle |
+| Initial board smoke test | Without the two loopback wires, a 60 s ST-LINK virtual COM run produced 1194 channel-0 and 1193 channel-1 complete spectra, zero CRC/format/sequence errors and zero reported dropped blocks; maximum observed DSP processing field was 1,812 us |
+| Watchdog recovery observed | A dedicated DSP-stall firmware build caused repeated IWDG resets and reported `STATUS_WATCHDOG_RESET`; the normal firmware was restored and rechecked |
+| Still requires loopback and longer measurements | Actual DAC-to-ADC frequency accuracy, independently measured 100 kS/s trigger timing, sustained WCET/stack headroom, 30-minute endurance and external captures |
 
-No measured hardware number is claimed before it is measured. Files under
-`platform/stm32f446/` are integration-ready adapters, not proof that the target
-binary has already run.
+The 60 s smoke result is real board telemetry, not proof of ADC sample-rate
+accuracy or a worst-case deadline. Its no-wire inputs are floating. See the
+[dated evidence](evidence/run-20260927/metadata.md) and
+[hardware acceptance checklist](docs/validation.md) for details.
 
 ## Architecture
 
@@ -116,24 +119,40 @@ python -m pip install -r requirements.txt
 
 ## Build and run on the board
 
-Generate the STM32CubeIDE project using the exact settings in
-[platform/stm32f446/README.md](platform/stm32f446/README.md), add these sources,
-and compile the target backend instead of the portable FFT backend. Connect:
+On Windows with STM32CubeIDE, obtain the pinned official SDK and build the
+standalone CMake target:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\fetch_sdk.ps1
+powershell -ExecutionPolicy Bypass -File tools\build_target.ps1
+powershell -ExecutionPolicy Bypass -File tools\flash_target.ps1
+```
+
+The binary is `build/target-stm32f446/spectrum_f446.bin`; the flash helper
+programs it at `0x08000000` and verifies the read-back. The tested board is an ST-LINK V2.1
+NUCLEO-F446RE, using its virtual COM port at 921600 baud. Run the bounded
+no-wire serial check before connecting the loopback:
+
+```powershell
+python tools\serial_smoke.py --port COM6 --seconds 10
+```
+
+Then power off and connect:
 
 ```text
 PA4 / A2 (DAC output) -> PA0 / A0 (ADC channel 1)
 PA4 / A2 (DAC output) -> PA1 / A1 (ADC channel 2)
 ```
 
-Open the ST-LINK virtual COM port at 921600 8-N-1, then run:
+Power on and open the ST-LINK virtual COM port at 921600 8-N-1, then run:
 
 ```powershell
-python tools\spectrum_monitor.py --port COM5 --baud 921600 --plot `
+python tools\spectrum_monitor.py --port COM6 --baud 921600 --plot `
   --csv summary.csv --spectrum-csv spectrum.csv --waveform-csv waveform.csv
 ```
 
 The expected built-in tone is FFT bin 10:
-`100000 * 10 / 1024 = 976.5625 Hz`. Replace `COM5` with the enumerated port.
+`100000 * 10 / 1024 = 976.5625 Hz`. Replace `COM6` with the enumerated port.
 
 Dedicated validation builds can inject acquisition drops, a frozen ADC input,
 UART failures, or a DSP deadlock. See [fault injection](docs/fault_injection.md).

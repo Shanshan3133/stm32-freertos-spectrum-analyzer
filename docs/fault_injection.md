@@ -14,3 +14,16 @@ normal measurements.
 For each run, record the option, value, commit, observed status bits, reset
 cause, and recovery time. Never present injected faults as naturally occurring
 hardware failures.
+
+The standalone target build supports a DSP-stall validation binary without
+editing the default configuration:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\build_target.ps1 -WatchdogFaultAfterBlocks 100
+```
+
+It is written to `build/target-stm32f446-watchdog-fault/`, separate from the
+normal binary. After testing, run `tools/flash_target.ps1` to restore the
+normal build; the helper uses SWD under reset because a watchdog reset loop
+may prevent a normal debug connection. The 2026-09-27 result is recorded in
+[`evidence/run-20260927/metadata.md`](../evidence/run-20260927/metadata.md).

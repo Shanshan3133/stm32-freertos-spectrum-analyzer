@@ -1,6 +1,10 @@
 # Real-time, memory, and bandwidth budget
 
-These are design limits, not measurements.
+The task deadlines and stack sizes are design limits. A short on-board UART
+smoke run observed a maximum 1,812 us in the firmware's DWT-derived DSP
+processing field over 60 s; this is not an established WCET or 9 ms deadline
+acceptance result. The loopback input, long-run tail, stack margins, and
+independent timing trace still need validation.
 
 | Task | Priority | Activation | Deadline/WCET target | Stack |
 |---|---:|---:|---:|---:|
@@ -25,9 +29,9 @@ At 921600 baud 8-N-1, usable throughput is 92,160 bytes/s. Eight maximum-size
 margin. Actual frames are normally shorter because only reserved delimiter
 bytes are escaped.
 
-On hardware, measure DWT cycles and GPIO pulse widths in a release build, then
-replace targets with maximum and p99.9 results. Require 25% stack headroom and
-zero dropped acquisition blocks during a 30-minute stress run.
+During the loopback acceptance run, measure DWT cycles and GPIO pulse widths,
+then report maximum and p99.9 results. Require 25% stack headroom and zero
+dropped acquisition blocks during a 30-minute stress run.
 
 TIM5 is configured as the application timestamp source at 1 MHz, giving a
 71.58-minute unsigned wrap period. DWT remains available for short-interval
