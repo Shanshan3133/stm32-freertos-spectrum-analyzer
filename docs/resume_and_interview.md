@@ -3,7 +3,7 @@
 This document separates claims that are defensible now from claims that require
 physical target evidence. Keep that distinction in applications and interviews.
 
-## Current resume version: flashed and smoke-tested; loopback pending
+## Current resume version: flashed and loopback-tested
 
 **FreeRTOS Dual-Channel Real-Time Spectrum Analyzer | C, Python, STM32F446**
 
@@ -19,32 +19,35 @@ physical target evidence. Keep that distinction in applications and interviews.
 - Added progress-based watchdog voting, DMA ownership checks, sticky fault
   diagnostics, UART bandwidth analysis, and CI that builds and executes the
   portable C test suite.
-- Smoke-tested the board over its ST-LINK virtual COM port: 2,387 complete
-  spectra in 60 s, zero CRC/format/sequence errors or reported dropped blocks;
-  confirmed watchdog reset reporting with an injected DSP stall.
+- Verified DAC-to-dual-ADC loopback on the board: both channels detected FFT
+  bin 10 in all 2,387 spectra during a 60-second run, with no CRC/sequence
+  errors or reported dropped blocks; separately confirmed IWDG reset reporting
+  with an injected DSP stall.
 
-Do not claim verified 100 kS/s analog sampling accuracy, 976.5625 Hz detection,
-worst-case deadline, or watchdog recovery latency yet. The 100 kS/s trigger rate and
-9 ms deadline are configured targets until independent loopback/timing
-acceptance is complete. The smoke test used floating ADC inputs.
+Do not claim independently verified 100 kS/s clock accuracy, worst-case
+deadline, 30-minute endurance, or watchdog recovery latency yet. The DAC and
+ADCs share one timer, so observing bin 10 at a reported 976.563 Hz establishes
+the closed signal path but not absolute timebase accuracy. The 9 ms DSP
+deadline remains a design target pending sustained timing validation.
 
 ## Short project description for an application form
 
 Built and flashed a dual-channel FreeRTOS spectrum-analyzer firmware for
 STM32F446, combining timer-triggered ADC/DMA buffering, a CMSIS-DSP Q15 FFT,
 watchdog-supervised tasks, CRC-protected telemetry, Python visualization, fault
-injection, and CI. Initial on-board serial smoke and injected watchdog reset
-tests passed; DAC-to-ADC
-loopback accuracy and long-run timing/endurance measurements remain pending.
+injection, and CI. A 60-second on-board DAC-to-dual-ADC loopback run detected
+the expected FFT bin on both channels without protocol errors or reported
+dropped blocks. Independent sampling-clock, WCET and endurance measurements
+remain pending.
 
 ## Interview answer: what target evidence exists
 
-> I built and flashed the target firmware on NUCLEO-F446RE. With no external
-> jumpers, I observed correctly framed dual-channel telemetry over the ST-LINK
-> serial bridge with no reported drops in a 10-second smoke run. That proves
-> boot and basic data-path progress, but the ADC pins were floating. I have not
-> yet claimed measured sampling accuracy, tone detection, true WCET, or
-> watchdog recovery; those require the documented loopback and fault tests.
+> I built and flashed the target firmware on NUCLEO-F446RE. With DAC_OUT1
+> connected to both ADC inputs, both channels reported the expected FFT peak
+> throughout a 60-second run without transport errors or reported drops. I
+> also observed the IWDG reset-cause flag after deliberately stalling DSP.
+> Because the DAC and ADC share TIM2, this is a closed-path test, not an
+> independent measurement of the 100 kS/s clock or a WCET claim.
 
 ## Upgrade after hardware acceptance
 

@@ -6,9 +6,10 @@ Portfolio firmware for the STM32F446RE. The design samples two analog channels
 simultaneously at 100 kS/s per channel, processes 1024-sample blocks, and emits
 RMS, peak, dominant-frequency, waveform-preview, and spectrum data at 20 Hz.
 
-The minimum hardware is one NUCLEO-F446RE, its Mini-USB data cable, and two
-male-to-male jumper wires. The STM32 DAC generates a coherent 976.5625 Hz
-self-test tone; wiring PA4 to PA0 and PA1 closes the complete DAC-to-ADC loop.
+The minimum hardware is one NUCLEO-F446RE, its Mini-USB data cable, a small
+breadboard, and three male-to-male jumper wires. The STM32 DAC generates a
+coherent 976.5625 Hz self-test tone; connecting PA4/A2, PA0/A0 and PA1/A1 to
+one connected five-hole breadboard strip closes the DAC-to-ADC loop.
 No sensor module, soldering, external programmer, or USB-to-UART adapter is
 required. A logic analyzer is useful evidence but is not required to run it.
 
@@ -18,13 +19,16 @@ required. A logic analyzer is useful evidence but is not required to run it.
 |---|---|
 | Host verified | CRC-16, framing, recovery, bounded spectrum reassembly, complete CSV export, bandwidth bound, and 21 Python/fault-injection tests; portable FFT/C tests pass Cortex-M4 strict compile checks and execute in Linux CI |
 | Built and flashed on NUCLEO-F446RE | Reproducible ARM-GCC target build with official STM32CubeF4 HAL, FreeRTOS and CMSIS-DSP; dual-ADC/DAC DMA pipeline, USART2 DMA, task health voting, IWDG policy and WFI idle |
-| Initial board smoke test | Without the two loopback wires, a 60 s ST-LINK virtual COM run produced 1194 channel-0 and 1193 channel-1 complete spectra, zero CRC/format/sequence errors and zero reported dropped blocks; maximum observed DSP processing field was 1,812 us |
+| Initial board smoke test | With ADC inputs floating, a 60 s ST-LINK virtual COM run produced 1194 channel-0 and 1193 channel-1 complete spectra, zero CRC/format/sequence errors and zero reported dropped blocks |
+| DAC-to-dual-ADC loopback verified | With A2, A0 and A1 joined on one breadboard strip, 60 s produced 1194/1193 spectra; every frame peaked at bin 10 with median reported frequency 976.563 Hz on both channels; zero CRC/sequence errors or reported dropped blocks |
 | Watchdog recovery observed | A dedicated DSP-stall firmware build caused repeated IWDG resets and reported `STATUS_WATCHDOG_RESET`; the normal firmware was restored and rechecked |
-| Still requires loopback and longer measurements | Actual DAC-to-ADC frequency accuracy, independently measured 100 kS/s trigger timing, sustained WCET/stack headroom, 30-minute endurance and external captures |
+| Still requires independent and longer measurements | External 100 kS/s trigger timing, sustained WCET/stack headroom, 30-minute endurance, signal disconnect/recovery and external captures |
 
-The 60 s smoke result is real board telemetry, not proof of ADC sample-rate
-accuracy or a worst-case deadline. Its no-wire inputs are floating. See the
-[dated evidence](evidence/run-20260927/metadata.md) and
+The loopback uses the same TIM2 trigger for DAC and ADC, so a peak at nominal
+976.5625 Hz does not independently prove absolute clock/sample-rate accuracy.
+The 60 s maximum DSP time is not a WCET bound. See the
+[no-wire evidence](evidence/run-20260927/metadata.md),
+[loopback evidence](evidence/run-20260928/metadata.md), and
 [hardware acceptance checklist](docs/validation.md) for details.
 
 ## Architecture
@@ -137,11 +141,13 @@ no-wire serial check before connecting the loopback:
 python tools\serial_smoke.py --port COM6 --seconds 10
 ```
 
-Then power off and connect:
+Then power off and connect three male-to-male jumpers from these board pins to
+one connected five-hole strip on the same side of a breadboard's center gap:
 
 ```text
-PA4 / A2 (DAC output) -> PA0 / A0 (ADC channel 1)
-PA4 / A2 (DAC output) -> PA1 / A1 (ADC channel 2)
+A2 / PA4 (DAC output) ─┐
+A0 / PA0 (ADC1 input)  ─┼─ same connected breadboard strip
+A1 / PA1 (ADC2 input)  ─┘
 ```
 
 Power on and open the ST-LINK virtual COM port at 921600 8-N-1, then run:
@@ -153,6 +159,8 @@ python tools\spectrum_monitor.py --port COM6 --baud 921600 --plot `
 
 The expected built-in tone is FFT bin 10:
 `100000 * 10 / 1024 = 976.5625 Hz`. Replace `COM6` with the enumerated port.
+For a bounded, automatically checked run, use
+`python tools\loopback_check.py --port COM6 --seconds 60`.
 
 Dedicated validation builds can inject acquisition drops, a frozen ADC input,
 UART failures, or a DSP deadlock. See [fault injection](docs/fault_injection.md).

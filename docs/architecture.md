@@ -41,7 +41,8 @@ RMS, peak, and dominant frequency at their original precision.
 ## Self-test and recovery
 
 DAC1 outputs a 1024-sample sine table at FFT bin 10. TIM2 triggers DAC1 and both
-ADCs from the same 100 kHz event. Two jumpers may fan PA4 out to PA0 and PA1,
+ADCs from the same 100 kHz event. Three jumpers and one connected breadboard
+strip fan PA4 out to PA0 and PA1,
 testing both channels against the same coherent source.
 
 The acquisition monitor checks block size, generation sequence, and timestamp

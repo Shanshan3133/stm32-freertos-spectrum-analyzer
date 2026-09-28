@@ -4,7 +4,9 @@ The task deadlines and stack sizes are design limits. A short on-board UART
 smoke run observed a maximum 1,812 us in the firmware's DWT-derived DSP
 processing field over 60 s; this is not an established WCET or 9 ms deadline
 acceptance result. The loopback input, long-run tail, stack margins, and
-independent timing trace still need validation.
+independent timing trace still need validation. With the DAC-to-dual-ADC
+loopback connected on 2026-09-28, the maximum `processing_us` reported over
+60 s was 1,752 us. This is an observed short-run maximum, not WCET.
 
 | Task | Priority | Activation | Deadline/WCET target | Stack |
 |---|---:|---:|---:|---:|
