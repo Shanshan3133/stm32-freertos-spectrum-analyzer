@@ -165,24 +165,6 @@ For a bounded, automatically checked run, use
 Dedicated validation builds can inject acquisition drops, a frozen ADC input,
 UART failures, or a DSP deadlock. See [fault injection](docs/fault_injection.md).
 
-## Resume wording
-
-Use these bullets only after the hardware acceptance sheet passes:
-
-- Developed a dual-channel real-time spectrum analyzer on STM32F446 using
-  timer-triggered simultaneous ADC sampling, DMA ping-pong buffering, and a
-  CMSIS-DSP 1024-point Q15 FFT at 100 kS/s per channel.
-- Designed a priority-scheduled FreeRTOS acquisition/DSP/telemetry pipeline and
-  streamed bounded CRC-protected binary frames over USART DMA at 20 Hz.
-- Validated frequency accuracy, end-to-end latency, task stack margin, watchdog
-  recovery, and protocol fault handling using DAC loopback, GPIO timing traces,
-  and automated Python tests.
-
-Before hardware validation, use the accurate application-ready wording in
-[resume and interview notes](docs/resume_and_interview.md). Do not claim a
-measured target sampling rate, WCET, or endurance result until the acceptance
-sheet contains the corresponding evidence.
-
 ## License
 
 MIT.
