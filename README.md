@@ -39,7 +39,8 @@ oscilloscope measurement. See the
 
 ## On-board evidence
 
-![NUCLEO-F446RE DAC-to-dual-ADC breadboard loopback](evidence/run-20260928/hardware-loopback.jpg)
+<img src="evidence/run-20260928/hardware-loopback.jpg"
+     alt="NUCLEO-F446RE DAC-to-dual-ADC breadboard loopback" width="460">
 
 The photograph shows the physical prototype used for the loopback validation.
 The plot below is a separate live telemetry snapshot captured after the
