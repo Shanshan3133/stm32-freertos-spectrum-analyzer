@@ -27,6 +27,8 @@
 #define FAULT_INJECT_DSP_STALL_AFTER_BLOCKS  0u
 #endif
 #define FAULT_INJECT_UART_FAIL_EVERY_N_FRAMES 0u
+#ifndef FAULT_INJECT_FREEZE_ADC
 #define FAULT_INJECT_FREEZE_ADC              0u
+#endif
 
 #endif

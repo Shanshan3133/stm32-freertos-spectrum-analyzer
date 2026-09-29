@@ -173,6 +173,9 @@ static void dsp_task(void *argument) {
             (platform_core_clock_hz() / 1000000u);
         dsp_result.dropped_blocks = platform_adc_overruns();
         dsp_result.status |= status_get();
+#if FAULT_INJECT_FREEZE_ADC
+        dsp_result.status |= STATUS_FAULT_INJECTED;
+#endif
         dsp_result.status |= spectrum_health_check(&dsp_result,
                                                    DSP_DEADLINE_US);
         (void)xQueueOverwrite(result_queue, &dsp_result);
@@ -190,22 +193,21 @@ static void dsp_task(void *argument) {
 static void telemetry_task(void *argument) {
     (void)argument;
     uint16_t sequence = 0u;
-    TickType_t last_output = 0u;
+    TickType_t last_wake = xTaskGetTickCount();
 #if FAULT_INJECT_UART_FAIL_EVERY_N_FRAMES > 0u
     uint32_t frames_attempted = 0u;
 #endif
     for (;;) {
+        /* A 50 ms RTOS period is independent of 10.24 ms ADC block spacing. */
+        vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(1000u / SPECTRUM_OUTPUT_HZ));
         if (xQueueReceive(result_queue, &telemetry_result,
-                          pdMS_TO_TICKS(100u)) != pdPASS) {
+                          0u) != pdPASS) {
             /* A missing result means the pipeline has not progressed. */
             continue;
         }
-        const TickType_t now = xTaskGetTickCount();
-        if ((now - last_output) < pdMS_TO_TICKS(1000u / SPECTRUM_OUTPUT_HZ)) {
-            app_health_kick(HEALTH_TELEMETRY);
-            continue;
-        }
-        for (uint8_t channel = 0u; channel < ANALYZER_CHANNELS; ++channel) {
+        bool transmitted = true;
+        for (uint8_t channel = 0u;
+             channel < ANALYZER_CHANNELS && transmitted; ++channel) {
             for (uint8_t chunk = 0u;
                  chunk < ANALYZER_CHUNKS_PER_CHANNEL; ++chunk) {
                 const size_t length = telemetry_encode_spectrum_chunk(
@@ -224,13 +226,13 @@ static void telemetry_task(void *argument) {
                     !platform_uart_write_dma(telemetry_frame, length,
                                              UART_FRAME_TIMEOUT_MS)) {
                     status_set(STATUS_UART_BACKPRESSURE);
+                    transmitted = false;
                     break;
                 }
                 ++sequence;
             }
         }
-        last_output = now;
-        app_health_kick(HEALTH_TELEMETRY);
+        if (transmitted) app_health_kick(HEALTH_TELEMETRY);
     }
 }
 

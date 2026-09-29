@@ -19,15 +19,25 @@ zero reported dropped blocks. This confirms the loopback signal path, not an
 independently measured 100 kS/s clock. See the
 [`loopback evidence`](../evidence/run-20260928/metadata.md).
 
+A later 1,800.071 s continuous loopback run received 35,998 and 35,999
+spectra on channels 0 and 1, respectively (19.998/19.999 Hz), with zero
+CRC/format/sequence errors, zero reported dropped blocks, and zero measured
+9 ms deadline misses. The maximum observed DSP time was 1,742 us and p99.9
+was 1,731 us. The host-versus-board timestamp estimate of 99,995.19 samples/s
+is not an independent instrument measurement. A separate injected ADC-freeze
+run produced weak/frozen/injected status with `SIGNAL_VALID` clear in 205
+frames. After restoring normal firmware, a 10 s loopback check passed with
+200 frames per channel. See
+[`additional validation evidence`](../evidence/run-20260928/additional-validation.md).
+
 ## Remaining board priorities
 
 1. Independently measure TIM2/DAC/ADC timing with an external instrument.
    A logic analyzer cannot measure analog voltage; use an oscilloscope for PA4
    when available. The shared-clock loopback cannot prove absolute frequency.
-2. Run a sustained test, report DWT-derived processing-time maximum and p99.9,
-   task stack high-water marks, and compare with the 9 ms design deadline.
-3. Save a Python spectrum screenshot and complete frequency-bin CSV.
-4. In a separate controlled test, power off before changing the loopback
+2. Measure task stack high-water marks and independently corroborate the
+   DWT-derived DSP timing. The 30-minute run and spectrum snapshot are complete.
+3. In a separate controlled test, power off before changing the loopback
    connection, then verify signal-fault reporting and recovery. Floating ADC
    pins alone may spuriously appear valid, so do not assume this test passes.
 
@@ -35,12 +45,12 @@ independently measured 100 kS/s clock. See the
 |---|---|---|
 | Sampling rate | GPIO marker at DMA half callback, 60 s | 10.240 ms block period within 0.1%; no gaps |
 | Dual-channel path | PA4 wired to PA0 and PA1 | observed 2026-09-28: both peaked at bin 10 for all 2,387 frames in 60 s |
-| FFT deadline | DWT cycle count and DSP GPIO pulse | maximum processing time < 9.0 ms |
-| Spectrum output | Python monitor for 30 min | 20 results/s/channel; no unexpected sequence loss |
+| FFT deadline | DWT cycle count and DSP GPIO pulse | observed DWT-derived maximum 1.742 ms in 30 min with zero deadline misses; GPIO pulse measurement pending |
+| Spectrum output | Python monitor for 30 min | observed 2026-09-28: 1,800.071 s, 19.998/19.999 results/s, zero sequence loss |
 | Protocol faults | Python unit suite | malformed/CRC/truncated/escape cases recover |
 | Timestamp wrap | run beyond 24 s and inject values around u32 wrap | no false gap at the former DWT wrap; wrap-safe subtraction |
 | DMA ownership | delay DSP beyond one block in fault build | stale half-buffer rejected and flagged |
-| Signal quality | disconnect, ground, then overdrive within safe limits | weak/frozen/clipping flags; valid bit cleared |
+| Signal quality | injected ADC freeze | observed 2026-09-28: weak/frozen flags set and valid bit cleared in 205 frames; physical disconnect/ground/clipping remain open |
 | UART saturation | worst-case escaped test data | no transmit timeout or flagged drop |
 | Stack margin | `uxTaskGetStackHighWaterMark()` after stress | at least 25% free per task |
 | Watchdog | compile-time DSP-stall injection | observed 2026-09-27: IWDG reset and reset-cause bit; measure recovery latency separately |

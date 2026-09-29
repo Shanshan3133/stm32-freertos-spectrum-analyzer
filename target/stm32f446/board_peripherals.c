@@ -39,12 +39,20 @@ void SystemClock_Config(void) {
     __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
     RCC_OscInitTypeDef oscillator = {0};
+#if defined(USE_STLINK_MCO_CLOCK)
+    /* MB1136 C-02+ routes the ST-LINK 8 MHz MCO to OSC_IN by default. */
+    oscillator.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+    oscillator.HSEState = RCC_HSE_BYPASS;
+    oscillator.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+    oscillator.PLL.PLLM = 8;
+#else
     oscillator.OscillatorType = RCC_OSCILLATORTYPE_HSI;
     oscillator.HSIState = RCC_HSI_ON;
     oscillator.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-    oscillator.PLL.PLLState = RCC_PLL_ON;
     oscillator.PLL.PLLSource = RCC_PLLSOURCE_HSI;
     oscillator.PLL.PLLM = 16;
+#endif
+    oscillator.PLL.PLLState = RCC_PLL_ON;
     oscillator.PLL.PLLN = 360;
     oscillator.PLL.PLLP = RCC_PLLP_DIV2;
     oscillator.PLL.PLLQ = 8;

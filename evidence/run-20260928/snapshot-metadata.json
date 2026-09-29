@@ -1,0 +1,20 @@
+{
+  "captured_at_utc": "2026-09-29T01:13:22.489716+00:00",
+  "source": "live STM32F446RE telemetry, DAC-to-dual-ADC loopback",
+  "timestamp_us": 297750437,
+  "status_by_channel": {
+    "0": "0x00000203",
+    "1": "0x00000203"
+  },
+  "dominant_hz_by_channel": {
+    "0": 976.533,
+    "1": 976.533
+  },
+  "rms_by_channel": {
+    "0": 0.28302001953125,
+    "1": 0.28289794921875
+  },
+  "crc_errors": 0,
+  "sequence_lost": 0,
+  "clock_caveat": "DAC and ADC share TIM2; frequencies use nominal sample rate"
+}

@@ -27,3 +27,11 @@ normal binary. After testing, run `tools/flash_target.ps1` to restore the
 normal build; the helper uses SWD under reset because a watchdog reset loop
 may prevent a normal debug connection. The 2026-09-27 result is recorded in
 [`evidence/run-20260927/metadata.md`](../evidence/run-20260927/metadata.md).
+
+The ADC-freeze validation binary can likewise be built separately with
+`tools/build_target.ps1 -FreezeAdcFault`. It is stored in
+`build/target-stm32f446-freeze-fault/`. Program that binary only for the
+controlled test, then restore the normal `-UseStlinkMcoClock` build. An
+injected freeze should set `STATUS_SIGNAL_WEAK`, `STATUS_SIGNAL_FROZEN`, and
+`STATUS_FAULT_INJECTED`, and clear `STATUS_SIGNAL_VALID`. This checks the
+software detection path, not physical wire-disconnect behavior.

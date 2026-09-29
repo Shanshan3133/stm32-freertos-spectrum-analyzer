@@ -1,9 +1,14 @@
 [CmdletBinding()]
-param()
+param([switch]$UseStlinkMcoClock)
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$binary = Join-Path $root 'build\target-stm32f446\spectrum_f446.bin'
+$buildName = if ($UseStlinkMcoClock) {
+    'target-stm32f446-stlink-mco'
+} else {
+    'target-stm32f446'
+}
+$binary = Join-Path $root "build\$buildName\spectrum_f446.bin"
 if (-not (Test-Path -LiteralPath $binary)) {
     throw 'Normal target binary is missing; run tools/build_target.ps1 first.'
 }

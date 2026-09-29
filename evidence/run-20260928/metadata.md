@@ -46,5 +46,8 @@ share TIM2, so a clock-rate error moves both together and still yields bin 10.
 The reported frequency is inferred from the configured nominal 100 kS/s rate,
 not measured against an independent time reference. Likewise, 1,752 us is the
 maximum reported during this 60 s run, not a proven worst-case execution time.
-External timing measurement, stack headroom, 30-minute endurance, and signal
+This file describes only the initial 60 s run. The later
+[30-minute endurance and injected-freeze results](additional-validation.md),
+plus a [live spectrum snapshot](spectrum-snapshot.png), are recorded
+separately. External timing measurement, stack headroom, and physical signal
 disconnect/recovery tests remain open.

@@ -3,6 +3,9 @@ project(stm32_freertos_spectrum C ASM)
 
 set(WATCHDOG_FAULT_AFTER_BLOCKS 0 CACHE STRING
     "Suspend DSP after N blocks for watchdog-reset validation (0 disables)")
+option(FREEZE_ADC_FAULT "Freeze ADC samples for signal-fault validation" OFF)
+option(USE_STLINK_MCO_CLOCK
+    "Use the 8 MHz ST-LINK MCO via HSE bypass on MB1136 C-02+ boards" OFF)
 
 set(STM32CUBE_F4_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../build/vendor/STM32CubeF4"
     CACHE PATH "STM32CubeF4 checkout with HAL, device and FreeRTOS submodules")
@@ -77,6 +80,12 @@ target_compile_definitions(spectrum_f446.elf PRIVATE
     STM32F446xx USE_HAL_DRIVER ANALYZER_STM32F446
     ANALYZER_USE_CMSIS_DSP ARM_MATH_CM4
     FAULT_INJECT_DSP_STALL_AFTER_BLOCKS=${WATCHDOG_FAULT_AFTER_BLOCKS}u)
+if(USE_STLINK_MCO_CLOCK)
+  target_compile_definitions(spectrum_f446.elf PRIVATE USE_STLINK_MCO_CLOCK=1)
+endif()
+if(FREEZE_ADC_FAULT)
+  target_compile_definitions(spectrum_f446.elf PRIVATE FAULT_INJECT_FREEZE_ADC=1)
+endif()
 
 target_compile_options(spectrum_f446.elf PRIVATE
     -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard

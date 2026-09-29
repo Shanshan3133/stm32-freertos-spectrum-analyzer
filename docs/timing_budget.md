@@ -1,12 +1,13 @@
 # Real-time, memory, and bandwidth budget
 
-The task deadlines and stack sizes are design limits. A short on-board UART
-smoke run observed a maximum 1,812 us in the firmware's DWT-derived DSP
-processing field over 60 s; this is not an established WCET or 9 ms deadline
-acceptance result. The loopback input, long-run tail, stack margins, and
-independent timing trace still need validation. With the DAC-to-dual-ADC
-loopback connected on 2026-09-28, the maximum `processing_us` reported over
-60 s was 1,752 us. This is an observed short-run maximum, not WCET.
+The task deadlines and stack sizes are design limits, not all measured task
+WCETs. During the 2026-09-28 DAC-to-dual-ADC loopback endurance run of
+1,800.071 s, the firmware's DWT-derived DSP processing field had a maximum
+of 1,742 us and p99.9 of 1,731 us, with zero samples reaching the 9 ms
+deadline. The observed maximum leaves 7,258 us of margin against that design
+limit, but is not a proven worst-case bound. Task stack margins and an
+independent GPIO timing trace remain unmeasured. See the
+[run evidence](../evidence/run-20260928/additional-validation.md).
 
 | Task | Priority | Activation | Deadline/WCET target | Stack |
 |---|---:|---:|---:|---:|
@@ -31,14 +32,14 @@ At 921600 baud 8-N-1, usable throughput is 92,160 bytes/s. Eight maximum-size
 margin. Actual frames are normally shorter because only reserved delimiter
 bytes are escaped.
 
-During the loopback acceptance run, measure DWT cycles and GPIO pulse widths,
-then report maximum and p99.9 results. Require 25% stack headroom and zero
-dropped acquisition blocks during a 30-minute stress run.
+The DWT-derived maximum and p99.9 above satisfy the observed processing-time
+check, and zero dropped acquisition blocks were reported over 30 minutes.
+GPIO pulse-width validation and the target of at least 25% task stack headroom
+remain open.
 
 TIM5 is configured as the application timestamp source at 1 MHz, giving a
 71.58-minute unsigned wrap period. DWT remains available for short-interval
 cycle profiling only; it is not used as the long-running timestamp. The DSP
 task records `DWT->CYCCNT` before DC removal and after both channel FFTs, then
 converts the wrap-safe cycle delta to `processing_us` for every telemetry frame.
-The 9 ms value remains an acceptance limit until real hardware results replace
-the `TBD` fields.
+The 9 ms value is a design limit; the 30-minute observed maximum is below it.

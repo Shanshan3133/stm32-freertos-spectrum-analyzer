@@ -40,4 +40,6 @@ python tools\fft_precision_report.py --check
 After flashing the board, repeat these cases through DAC loopback and add
 `CMSIS-DSP Hz`, `CMSIS-DSP RMS`, cycle count, compiler flags, and firmware
 commit columns. The target acceptance limits are 1 FFT bin frequency error,
-RMS error below 1%, and DSP WCET below 9 ms.
+RMS error below 1%, and observed DSP processing time below the 9 ms design
+deadline. The 30-minute loopback run observed a maximum of 1.742 ms; this is
+not a proven WCET bound or an independent absolute frequency measurement.
