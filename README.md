@@ -101,7 +101,7 @@ stateDiagram-v2
     SignalFault --> LatchedFault: infrastructure fault
     LatchedFault --> Starting: MCU reset
     LatchedFault --> WatchdogReset: missing task health vote
-    WatchdogReset --> Starting: reboot; reset-cause bit retained in telemetry
+    WatchdogReset --> Starting: reboot and report reset cause
 ```
 
 Signal-quality bits describe the current FFT result and therefore clear on the
